@@ -1,71 +1,51 @@
-CC = ../../opencilk-2.1.0-x86_64-linux-gnu-ubuntu-22.04/bin/clang++
-TARGET :=simple
+# Compiler and flags
+CC = g++
+TARGET := simple
 SRC := simpleTest
 OBJ := $(SRC:.cpp=.o)
-UNAME := $(shell uname)
+COMMON = common_sort.h regionsSort.h parallel.h prefixsum.h radix_configs.h sequence.h sequenceIO.h triangle.h utils.h IO.h edge.h edgelistgraph.h block.h example.cpp misc.h radixSort.h
 
-OS_TYPE := Parallel Linux
-PFLAG := -DPARALLEL -D_BSD_SOURCE -D_XOPEN_SOURCE=700
-# -g needed for test framework assertions
-#
-# switch -fdetach to -ftapir to enable Tapir optimization passes for better
-# performance.
-CFLAGS := -std=c++14 -Wall -g
-LDFLAGS= -Wall -lm -lrt -ldl -lpthread -lopenmp -fuse-ld=gold
+CFLAGS := -std=c++17 -Wall -g -O3 -flto -march=native -I. -I./parlaylib -DPARLAY -w #-fsanitize=address #disabled warnings
 
+LDFLAGS := -flto -lpthread
 
 ifeq ($(DEBUG),1)
-	CFLAGS += -O0 -DDEBUG $(PFLAG)
-else
-	CFLAGS += -O3 -flto -DNDEBUG -march=native
+	CFLAGS += -O0 -DDEBUG
 endif
 
 ifeq ($(REFERENCE),1)
 	CFLAGS += -DRUN_REFERENCE_CODE=1
 endif
 
-CFLAGS += $(OTHER_CFLAGS)
-
-LDFLAGS= -Wall -lm -lrt -ldl -flto -lpthread 
 ifeq ($(PROFILE),1)
 	CFLAGS += -DPROFILE
 	LDFLAGS += -lprofiler
 endif
 
+.PHONY: default clean
 
-COMMON = common_sort.h regionsSort.h parallel.h prefixsum.h radix_configs.h sequence.h sequenceIO.h triangle.h utils.h IO.h edge.h edgelistgraph.h block.h example.cpp misc.h radixSort.h
+default: radixSort radixSort_cycle
 
-.PHONY : default clean
+radixSort: $(COMMON)
+	$(CC) $(CFLAGS) example.cpp -DBITS_HACK -o radixSort $(LDFLAGS)
 
+radixSort_cycle: $(COMMON)
+	$(CC) $(CFLAGS) example.cpp -DCYCLE -DBITS_HACK -o radixSort_cycle $(LDFLAGS)
 
-
-default : radixSort radixSort_cycle 
-
-radixSort : $(COMMON)
-	g++ -I. -std=c++14 example.cpp -DCILKP -DBITS_HACK -O3 -flto -march=native -fcilkplus -lcilkrts -o radixSort
-
-radixSort_cycle : $(COMMON)
-	g++ -I. -std=c++14 example.cpp -DCILKP -DCYCLE -DBITS_HACK -O3 -flto -march=native -fcilkplus -lcilkrts -o radixSort_cycle
-
-# Each C source file will have a corresponding file of prerequisites.
-# Include the prerequisites for each of our C source files.
+# Dependency generation
 -include $(SRC:.cpp=.d)
 
-# This rule generates a file of dependencies (i.e., a makefile) %.d
-# from the C source file %.c.
 %.d : %.cpp
 	@set -e; rm -f $@; \
 	$(CC) -MM -MT $*.o -MP -MF $@.$$$$ $(CFLAGS) $<; \
 	sed -e 's|\($*\)\.o[ :]*|\1.o $@ : |g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$*
 
-# We could use the -MMD and -MP flags here to have this rule generate
-# the dependencies file.
 %.o : %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-simple : simple.o $(OBJ)
-	$(CC) $^ $(LDFLAGS) -o $@ -lrt
+simple: simple.o $(OBJ)
+	$(CC) $^ $(LDFLAGS) -o $@
 
-clean :
-	rm -f *.o *.d* *~ $(TARGET) radixSort radixSort_cycle  
+clean:
+	rm -f *.o *.d* *~ $(TARGET) radixSort radixSort_cycle

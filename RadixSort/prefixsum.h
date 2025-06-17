@@ -37,9 +37,9 @@ void getSerialPrefixSum( Edge  ** input,sizeT *res, int size) {
 
 
 void getParallelPrefixSum( Edge  ** input,sizeT *res, int size) {
-  parallel_for_swap(int i = 0; i < size; i ++) {
+  parallel_for(0, size, [&](size_t i) { 
     res[i] = input[i]->amount;
-  }
+  });
   long total = sequence::plusScan(res, res, size);
   res[size] = total;
 }
@@ -55,9 +55,9 @@ void getSerialPrefixSumReal( Edge  * input,sizeT *res, int size) {
 }
 
 void getParallelPrefixSumReal( Edge  * input,sizeT *res, int size) {
-  parallel_for_swap(int i = 0; i < size; i ++) {
+  parallel_for(0, size, [&](size_t i) {
     res[i] = input[i].amount;
-  }
+  });
   sizeT total = sequence::plusScan(res, res, size);
   res[size] = total;
 }

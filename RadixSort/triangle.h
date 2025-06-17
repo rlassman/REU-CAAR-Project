@@ -69,13 +69,13 @@ void serialExecuteTriangle(E *A, Triangle  *triangle) {
 
 template <class E>
 void parallelExecuteTriangle(E *A, Triangle  *triangle) {
-  parallel_for_swap(sizeT index = 0; index < triangle->amount; index ++) {
+  parallel_for(0, triangle->amount, [&](size_t index) {
     sizeT from = triangle->offset2 + index; 
     sizeT to = triangle->offset1 + index; 
     E temp = A[from];
     A[from] = A[to];
     A[to] = temp;
-  }
+  });
 
 }
 

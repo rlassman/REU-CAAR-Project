@@ -104,47 +104,47 @@ namespace benchIO {
       #endif 
       int errsv = errno;
  
-      parallel_for(long i=0; i < n; i++)
-	A[i] = atol(W.Strings[i+1]);
+      parallel_for(0, n, [&](size_t i) {
+	A[i] = atol(W.Strings[i+1]);});
       //W.del(); // to deal with performance bug in malloc
       return seqData((void*) A, n, intType);
     } else if (header == seqHeader(doubleT)) {
       double* A = new double[n];
-      parallel_for (long i=0; i < n; i++)
-	A[i] = atof(W.Strings[i+1]);
+      parallel_for (0, n, [&](size_t i) {
+	A[i] = atof(W.Strings[i+1]);});
       //W.del(); // to deal with performance bug in malloc
       return seqData((void*) A, n, doubleT);
     } else if (header == seqHeader(stringT)) {
       char** A = new char*[n];
-      parallel_for (long i=0; i < n; i++)
-	A[i] = W.Strings[i+1];
+      parallel_for (0, n, [&](size_t i) {
+	A[i] = W.Strings[i+1];});
       //free(W.Strings); // to deal with performance bug in malloc
       return seqData((void*) A, W.Chars, n, stringT);
     } else if (header == seqHeader(intPairT)) {
       n = n/2;
       intPair* A = new intPair[n];
-      parallel_for (long i=0; i < n; i++) {
+      parallel_for (0, n, [&](size_t i) {
 	A[i].first = atol(W.Strings[2*i+1]);
 	A[i].second = atol(W.Strings[2*i+2]);
-      }
+      });
       //W.del();  // to deal with perfromance bug in malloc
       return seqData((void*) A, n, intPairT);
     } else if (header == seqHeader(stringIntPairT)) {
       n = n/2;
       stringIntPair* A = new stringIntPair[n];
-      parallel_for (long i=0; i < n; i++) {
+      parallel_for (0, n, [&](size_t i) {
 	A[i].first = W.Strings[2*i+1];
 	A[i].second = atol(W.Strings[2*i+2]);
-      }
+      });
       // free(W.Strings); // to deal with performance bug in malloc
       return seqData((void*) A, W.Chars, n, stringIntPairT);
     } else if (header == seqHeader(intStringPairT)) {
       n = n/2;
       intStringPair* A = new intStringPair[n];
-      parallel_for (long i=0; i < n; i++) {
+      parallel_for (0, n, [&](size_t i) {
 	A[i].first = atol(W.Strings[2*i+1]);
 	A[i].second = W.Strings[2*i+2];
-      }
+      });
       // free(W.Strings); // to deal with performance bug in malloc
       return seqData((void*) A, W.Chars, n, intStringPairT);
     }

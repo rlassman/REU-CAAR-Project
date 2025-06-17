@@ -1,21 +1,13 @@
 #ifndef _PARALLEL_H
 #define _PARALLEL_H
 
-#include<parlay/primitives.h>
-#include<parlay/parallel.h>
+#include <parlay/primitives.h>
+#include <parlay/parallel.h>
 #include <iostream>
 
 #define parallel_main main
 #define parallel_for(par_lo, par_hi, par_body) \
     parlay::parallel_for(par_lo, par_hi, par_body)
-#define parallel_for_1(par_lo, par_hi, par_body) \
-    parlay::parallel_for(par_lo, par_hi, par_body, 1)
-#define parallel_for_256(par_lo, par_hi, par_body) \
-    parlay::parallel_for(par_lo, par_hi, par_body, 256)
-#define parallel_for_swap(par_lo, par_hi, par_body) \
-    parlay::parallel_for(par_lo, par_hi, par_body, 4000)
-#define parallel_for_extract(par_lo, par_hi, par_body) \
-    parlay::parallel_for(par_lo, par_hi, par_body, 256)
 
 static int getWorkers() {
   return parlay::num_workers();

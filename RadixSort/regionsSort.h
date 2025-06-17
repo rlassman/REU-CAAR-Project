@@ -47,7 +47,7 @@ template <class E, class F, class Z>
     }
 
 #ifdef ILP_SORT  
-    if(n > 1024){
+     if(n > 1024){
       struct metaData meta(extract._offset, true, false, internalCounts);
       ska_sort(A, A + n, f,meta);
       return meta.done;
@@ -64,19 +64,19 @@ template <class E, class F, class Z>
 
 
   SimpleBlock *blocks = new SimpleBlock[K];
-  parallel_for_1(int i = 0; i < K; i ++) {
+  parallel_for(0, K, [&](size_t i) {
     unsigned long start = (long)i * n / K;
     unsigned long end = ((long)(i + 1) * n) / K;
     blocks[i].init(start, end);
     sortSimpleBlock(A, &blocks[i], extract);
-  }
+  });
 
-  parallel_for_1(int bucket = 0; bucket < BUCKETS; bucket ++) {
+  parallel_for(0, BUCKETS, [&](size_t bucket) {
     internalCounts[bucket] = 0;        
     for(sizeT i = 0; i < K; i ++) {
       internalCounts[bucket] += blocks[i].counts[bucket];
     }
-  }
+  });
 
   long countryEnds[BUCKETS];
 
@@ -123,9 +123,9 @@ template <class E, class F, class Z>
     while(cycle.getNextCycle(&cycleGraph, &cyclePlan[planc ++])) {
       cycle.consumeCycle();
     }
-    parallel_for_1(int i = 0; i < planc - 1; i ++){
+    parallel_for(0, planc - 1, [&](size_t i){
       cyclePlan[i].executeCycle(A);
-    }
+    });
     sizeT startOfCountry;
     if(node == 0) {
       startOfCountry = 0;
@@ -133,14 +133,10 @@ template <class E, class F, class Z>
       startOfCountry = countryEnds[node - 1];
     }
     sizeT nextK = nextKs[node];
-    if(internalCounts[node] < INSERTION_THRESHOLD){	
-      radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
-    }
-    else{
-      cilk_spawn radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
-    }	
+   
+    radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
+    
   }
-  cilk_sync;
   delete blocks;
   return false;
 #else
@@ -156,9 +152,9 @@ template <class E, class F, class Z>
     int node = order[index];
     triangles_count = 0;
     graph.extractNode2(node, triangles, &triangles_count);
-    parallel_for_1(int i = 0; i < triangles_count; i ++) {
+    parallel_for(0, triangles_count, [&](size_t i) {
       executeTriangle(A, &triangles[i]);
-    }
+    });
 
     sizeT startOfCountry;
     if(node == 0) {
@@ -168,14 +164,10 @@ template <class E, class F, class Z>
     }
 
     sizeT nextK = nextKs[node];
-    if(internalCounts[node] < INSERTION_THRESHOLD){
+    
 			
-      radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
-    }
-    else{
-      cilk_spawn radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
+    radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
 
-    }
 
     graph.deleteNode(node);
 
@@ -184,8 +176,6 @@ template <class E, class F, class Z>
     }
 
   }
-
-  cilk_sync;
     
   delete triangles; 
   delete blocks;
@@ -193,3 +183,97 @@ template <class E, class F, class Z>
   return false;
 }
 #endif
+
+
+
+
+/*spawn()
+sync(vector<void -> void> fs) {
+  par_for f in fs {
+    f();
+  }
+}*/
+
+//messed it up
+/*#ifdef CYCLE
+  CycleGraph cycleGraph;
+  cycleGraph.createCycleGraph(BUCKETS, K, blocks, countryEnds);
+  vector<CycleGraph::CyclePlan> cyclePlan(BUCKETS * K + BUCKETS + 1);
+
+  parlay::sequence<std::function<void()>> tasks(countNonZero);
+
+  for(int index = 0; index < countNonZero; index ++) {
+    tasks[index] = [=, &cycleGraph, &cyclePlan]() {
+      int node = order[index];
+      CycleGraph::Cycle cycle(node);
+      int planc = 0;
+      while(cycle.getNextCycle(&cycleGraph, &cyclePlan[planc ++])) {
+        cycle.consumeCycle();
+      }
+      parallel_for(0, planc - 1, [&](size_t i) {
+        cyclePlan[i].executeCycle(A);
+      });
+      sizeT startOfCountry;
+      if(node == 0) {
+        startOfCountry = 0;
+      } else {
+        startOfCountry = countryEnds[node - 1];
+      }
+      sizeT nextK = nextKs[node];
+      radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
+      
+    };
+  }
+  parallel_for(0, tasks.size(), [&](size_t i) {
+    tasks[i]();
+  });
+
+  delete blocks;
+  return false;
+#else
+
+  EdgeListGraph graph(K, rank, order);
+  graph.createParallelGraph(BUCKETS, K, blocks, countryEnds);
+
+  int triangles_count;
+
+  parlay::sequence<std::function<void()>> tasks(countNonZero);
+
+  for(int index = 0; index < countNonZero; index ++) {
+    tasks[index] = [=, &graph, &triangles]() {
+      int node = order[index];
+      int local_triangles_count = 0;
+      graph.extractNode2(node, triangles, &local_triangles_count);
+      parallel_for(0, local_triangles_count, [&](size_t i) {
+        executeTriangle(A, &triangles[i]);
+      });
+
+      sizeT startOfCountry;
+      if(node == 0) {
+        startOfCountry = 0;
+      } else {
+        startOfCountry = countryEnds[node - 1];
+      }
+
+      sizeT nextK = nextKs[node];
+        
+      radixSortOneLevel(A + startOfCountry, internalCounts[node], doneOffset, f, nextK, depth + 1);
+
+      graph.deleteNode(node);
+
+      for(int i = 0; i < local_triangles_count; i ++) {
+        graph.consumeTriangle(&triangles[i]);
+      }
+    };
+  }
+
+  parallel_for(0, tasks.size(), [&](size_t i) {
+    tasks[i]();
+  });
+    
+  delete triangles; 
+  delete blocks;
+#endif
+  return false;
+}
+#endif*/

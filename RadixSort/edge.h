@@ -2,6 +2,7 @@
 #define _S_EDGE_INCLUDED
 
 #include <stdio.h>
+#include "radix_configs.h"
 
 class Edge {
  public:
@@ -30,7 +31,7 @@ class Edge {
     amount = 0;
   }
 
-  bool isTrivial(){
+  bool isTrivial() {
     return (from == to) || (amount <= 0);
   }
 

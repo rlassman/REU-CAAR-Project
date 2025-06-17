@@ -48,7 +48,7 @@ struct _seq {
 
 template <class E>
 void brokenCompiler__(intT n, E* x, E v) {
-  parallel_for(intT i=0; i<n; i++) x[i] = v;
+  parallel_for(0, n, [&](size_t i) { x[i] = v;});
 }
 
 template <class E>
@@ -101,11 +101,11 @@ namespace sequence {
     intT _ee = _e;					\
     intT _n = _ee-_ss;					\
     intT _l = nblocks(_n,_bsize);			\
-    parallel_for (intT _i = 0; _i < _l; _i++) {		\
+    parallel_for (0, _l, [&](size_t _i) {		\
       intT _s = _ss + _i * (_bsize);			\
       intT _e = min(_s + (_bsize), _ee);			\
       _body						\
-	}						\
+	});						\
   }
 
   template <class OT, class intT, class F, class G>
@@ -549,7 +549,7 @@ namespace sequence {
     if (n < _F_BSIZE)
       return filterSerial(In, Out, n, p);
     bool *Fl = newA(bool,n);
-    parallel_for (intT i=0; i < n; i++) Fl[i] = (bool) p(In[i]);
+    parallel_for (0, n, [&](size_t i) { Fl[i] = (bool) p(In[i]);});
     intT  m = pack(In, Out, Fl, n);
     free(Fl);
     return m;
@@ -560,7 +560,7 @@ namespace sequence {
   intT filter(ET* In, ET* Out, bool* Fl, intT n, PRED p) {
     if (n < _F_BSIZE)
       return filterSerial(In, Out, n, p);
-    parallel_for (intT i=0; i < n; i++) Fl[i] = (bool) p(In[i]);
+    parallel_for (0, n, [&](size_t i) { Fl[i] = (bool) p(In[i]);});
     intT  m = pack(In, Out, Fl, n);
     return m;
   }
@@ -568,7 +568,7 @@ namespace sequence {
   template <class ET, class intT, class PRED>
   _seq<ET> filter(ET* In, intT n, PRED p) {
     bool *Fl = newA(bool,n);
-    parallel_for (intT i=0; i < n; i++) Fl[i] = (bool) p(In[i]);
+    parallel_for (0, n, [&](size_t i) { Fl[i] = (bool) p(In[i]);});
     _seq<ET> R = pack(In, Fl, n);
     free(Fl);
     return R;
@@ -584,23 +584,23 @@ namespace sequence {
     intT l = nblocks(n, b);
     b = nblocks(n, l);
     intT *Sums = newA(intT,l + 1);
-    {parallel_for (intT i = 0; i < l; i++) {
+    {parallel_for (0, l, [&](size_t i) {
       intT s = i * b;
       intT e = min(s + b, n);
       intT k = s;
       for (intT j = s; j < e; j++)
 	if (p(In[j])) In[k++] = In[j];
       Sums[i] = k - s;
-    }}
+    });}
     intT m = plusScan(Sums, Sums, l);
     Sums[l] = m;
-    {parallel_for (intT i = 0; i < l; i++) {
+    {parallel_for (0, l, [&](size_t i) {
       ET* I = In + i*b;
       ET* O = Out + Sums[i];
       for (intT j = 0; j < Sums[i+1]-Sums[i]; j++) {
 	O[j] = I[j];
       }
-    }}
+    });}
     free(Sums);
     return m;
   }

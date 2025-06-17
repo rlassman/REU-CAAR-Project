@@ -2,13 +2,13 @@
 #define _S_CYCLEGRAPH_INCLUDED
 #ifndef STABLE
 #include <stdio.h>
-#include <edge.h>
+#include "edge.h"
 #include <vector>
-#include <prefixsum.h>
-#include <triangle.h>
-#include <block.h>
-#include <misc.h>
-#include <radix_configs.h>
+#include "prefixsum.h"
+#include "triangle.h"
+#include "block.h"
+#include "misc.h"
+#include "radix_configs.h"
 
 using namespace std;
 
@@ -68,7 +68,7 @@ class CycleGraph{
 	  A[starts[0] + pos] = save;
 	}
       } else {
-  parallel_for_swap(0, amount, [&](size_t pos) {
+	parallel_for(0, amount, [&](size_t pos) {
 	  E save = A[starts[length - 1] + pos];
 	  for(int i = length - 1; i > 0; i --) {
 	    A[starts[i] + pos] = A[starts[i - 1] + pos];
@@ -133,6 +133,7 @@ class CycleGraph{
 	path[i]->amount -= amount;
 	path[i]->start += amount;
       });
+    }
 
   };
 
@@ -202,4 +203,3 @@ class CycleGraph{
 #endif
 
 #endif
-
