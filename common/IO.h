@@ -61,13 +61,13 @@ namespace benchIO {
 
   // parallel code for converting a string to words
   words stringToWords(char *Str, long n) {
-    parallel_for (long i=0; i < n; i++) 
+    parallel_for (0, n, [&](size_t i) {
       if (isSpace(Str[i])) Str[i] = 0; 
-
+    });
     // mark start of words
     bool *FL = newA(bool,n);
     FL[0] = Str[0];
-    parallel_for (long i=1; i < n; i++) FL[i] = Str[i] && !Str[i-1];
+    parallel_for (1, n, [&](size_t i) {FL[i] = Str[i] && !Str[i-1];});
     
     // offset for each start of word
     _seq<long> Off = sequence::packIndex<long>(FL, n);
@@ -76,7 +76,7 @@ namespace benchIO {
 
     // pointer to each start of word
     char **SA = newA(char*, m);
-    parallel_for (long j=0; j < m; j++) SA[j] = Str+offsets[j];
+    parallel_for (0, m, [&](size_t j) {SA[j] = Str+offsets[j];});
 
     free(offsets); free(FL);
     return words(Str,n,SA,m);
@@ -128,15 +128,16 @@ namespace benchIO {
   template <class T>
   _seq<char> arrayToString(T* A, long n) {
     long* L = newA(long,n);
-    {parallel_for(long i=0; i < n; i++) L[i] = xToStringLen(A[i])+1;}
+    {parallel_for(0, n, [&](size_t i) {L[i] = xToStringLen(A[i])+1;});}
     long m = sequence::scan(L,L,n,utils::addF<long>(),(long) 0);
     char* B = newA(char,m);
-    parallel_for(long j=0; j < m; j++) 
+    parallel_for(0, m, [&](size_t j) { 
       B[j] = 0;
-    parallel_for(long i=0; i < n-1; i++) {
+    });
+    parallel_for(0, n-1, [&](size_t i) {
       xToString(B + L[i],A[i]);
       B[L[i+1] - 1] = '\n';
-    }
+    });
     xToString(B + L[n-1],A[n-1]);
     B[m-1] = '\n';
     free(L);
@@ -186,7 +187,7 @@ namespace benchIO {
     // initializes in parallel
     //char* bytes = newArray(n+1, (char) 0);
     char* bytes = newA(char, n+1);
-    parallel_for (long i = 0; i < n+1; i++) bytes[i] = 0;
+    parallel_for (0, n+1, [&](size_t i) {bytes[i] = 0;});
     file.read (bytes,n);
     file.close();
     return _seq<char>(bytes,n);
@@ -210,8 +211,9 @@ namespace benchIO {
     }
     long n = W.m-1;
     intT* A = new intT[n];
-    parallel_for(long i=0; i < n; i++)
+    parallel_for(0, n, [&](size_t i) {
       A[i] = atol(W.Strings[i+1]);
+    });
     return _seq<intT>(A,n);
   }
 };
