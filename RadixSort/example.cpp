@@ -72,7 +72,8 @@ int main(int argc, char **argv) {
     if(check) {
       check_sorted(array,length, utils::identityF<uintT>());
     }
-    free(array); free(control_array);
+    delete[] array; 
+    free(control_array);
   } else if (dt == intPairT) { //data type is pairs
     uintTPair* array = (uintTPair*) D.A;
 
@@ -92,7 +93,8 @@ int main(int argc, char **argv) {
       check_sorted_pairs(array,length, utils::firstF<uintT,uintT>());
     }
     ;
-    free(array); free(control_array);
+    delete[] array; 
+    free(control_array);
   } else if (dt == intStringPairT) {
     cout << "to implement" << endl;
   } else {

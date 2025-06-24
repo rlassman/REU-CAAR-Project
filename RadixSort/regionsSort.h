@@ -47,13 +47,13 @@ template <class E, class F, class Z>
     }
 
 #ifdef ILP_SORT  
-     if(n > 1024){
+     //if(n > 1024){
       struct metaData meta(extract._offset, true, false, internalCounts);
       ska_sort(A, A + n, f,meta);
       return meta.done;
-    }else{
+    /*}else{
       _RadixSort_Unsigned_PowerOf2Radix_1(A, internalCounts, (long)n, BUCKETS, extract);
-    }
+    }*/
     return true;
 #else 
     return true; 
@@ -177,8 +177,8 @@ template <class E, class F, class Z>
 
   }
     
-  delete triangles; 
-  delete blocks;
+  delete[] triangles; 
+  delete[] blocks;
 #endif
   return false;
 }

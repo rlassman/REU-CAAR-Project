@@ -138,7 +138,8 @@ template <class E, class F, class K>
   K findMaxHelper(E* A, sizeT n, F f, sizeT P, K t){
   
   K* temp = (K*)malloc(sizeof(E) * (P + 1));
-  parallel_for(0, n, [&](size_t i) {
+  parallel_for(0, P, [&](size_t i) {
+
     unsigned long start = i * (long)n / P;
     unsigned long end = ((long)(i + 1) * n) / P;
     K local_max = 0;
