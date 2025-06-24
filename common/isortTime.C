@@ -38,7 +38,7 @@ void timeIntegerSort(void* In, intT n, int rounds, char* outFile) {
   T* A = (T*) In;
   T* B = new T[n];
   for (int j = 0; j < rounds; j++) {
-    parallel_for (intT i=0; i < n; i++) B[i] = A[i];
+    parallel_for (0, n, [&](size_t i) {B[i] = A[i];});
     startTime();
     integerSort(B,n);
     nextTimeN();
