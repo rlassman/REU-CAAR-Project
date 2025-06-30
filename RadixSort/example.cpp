@@ -45,21 +45,30 @@ void check_sorted_pairs(pair<uintT,T>* array, long length, F f) {
 
 
 int main(int argc, char **argv) {
-  commandLine P(argc,argv,"[-r <rounds>] [-c] <inFile>");
-  char* iFile = P.getArgument(0);
+  commandLine P(argc,argv,"[-r <rounds>] [-c] [-n <length>] [-s <seed>]");
+  //char* iFile = P.getArgument(0);
   int rounds = P.getOptionIntValue("-r",3);
   bool check = P.getOption("-c");
+  int length = P.getOptionIntValue("-n", 10000);
+  int sd = P.getOptionIntValue("-s", 42);
   //add param for # of threads later
 
-  seqData D = readSequenceFromFile(iFile);
-  elementType dt = D.dt;
-  long length = D.n;
+  //seqData D = readSequenceFromFile(iFile);
+  //elementType dt = D.dt;
+  //long length = D.n;
 
-  if(dt == intType){ //data type is ints
-    uintT* array = (uintT*) D.A;
-    uintT* control_array = newA(uintT,length);
+  //if(dt){ //data type is ints
+    uintT* array = new uintT[length];
+    uintT* control_array = new uintT[length];
+    double avgTime = 0;
+    int low = 0, high = 1000;
+
+    parallel_for(0, length, [&](size_t i) {
+      std::mt19937_64 rng(sd + i);
+      std::uniform_int_distribution<uintT> dist(low, high);
+      control_array[i] = dist(rng);
+    });
     
-    parallel_for(0, length, [&](size_t i) {control_array[i] = array[i];});
     for(long round=0;round<rounds;round++) {
       parallel_for(0, length, [&](size_t i) {array[i] = control_array[i];});
       auto start = high_res_clock::now();
@@ -67,14 +76,17 @@ int main(int argc, char **argv) {
       auto end = high_res_clock::now();
       std::chrono::milliseconds diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
       std::cout << "radix sort time: " << diff.count() << " ms" << std::endl;
+      avgTime += diff.count();
     }
+
+    std::cout << "average sort time: " << avgTime/3 << std::endl;
   
     if(check) {
       check_sorted(array,length, utils::identityF<uintT>());
     }
     delete[] array; 
     free(control_array);
-  } else if (dt == intPairT) { //data type is pairs
+  /*} else if (dt == intPairT) { //data type is pairs
     uintTPair* array = (uintTPair*) D.A;
 
     uintTPair* control_array = newA(uintTPair,length);
@@ -99,7 +111,7 @@ int main(int argc, char **argv) {
     cout << "to implement" << endl;
   } else {
     cout << "input file not of right type" << endl;
-  }
+  }*/
 
   return 0;
 }
